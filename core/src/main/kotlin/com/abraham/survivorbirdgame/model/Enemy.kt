@@ -2,7 +2,7 @@ package com.abraham.survivorbirdgame.model
 
 import com.badlogic.gdx.graphics.Texture
 
-data class Enemy(
+open class Enemy(
     val texture: Texture,
     var x: Float,
     var y: Float,
