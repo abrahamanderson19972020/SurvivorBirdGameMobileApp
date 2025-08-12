@@ -4,17 +4,19 @@ package com.abraham.survivorbirdgame.screens
 import com.abraham.survivorbirdgame.*
 import com.abraham.survivorbirdgame.managers.GameAssets
 import com.abraham.survivorbirdgame.managers.GameUI
-import com.abraham.survivorbirdgame.managers.Question
-import com.abraham.survivorbirdgame.managers.QuestionGenerator
 import com.abraham.survivorbirdgame.model.Enemy
+import com.abraham.survivorbirdgame.model.Operation
 import com.abraham.survivorbirdgame.model.Player
+import com.abraham.survivorbirdgame.model.Question
+import com.abraham.survivorbirdgame.model.QuestionGenerator
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.Screen
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.utils.Array
-class MathematicGameScreen(private val game:com.badlogic.gdx.Game) : Screen {
+
+class MathematicGameScreen(private val game:com.badlogic.gdx.Game, private val operation: Operation) : Screen {
     private lateinit var batch: SpriteBatch
     private lateinit var player: Player
     private val enemies = Array<Enemy>()
@@ -32,10 +34,10 @@ class MathematicGameScreen(private val game:com.badlogic.gdx.Game) : Screen {
     private var backgroundX2 = 0f
     private val backgroundSpeed = 100f
 
-    // Enemy spawn timing
-    private var timeSinceLastSpawn = 0f
-    private val spawnInterval = 2f // seconds between enemy birds
-    private val baseEnemySpeed = 200f
+    private val baseEnemySpeed = 300f
+    private val playerBaseSpeed = 400f
+
+    private val speedIncrementPerLevel = 50f
 
     override fun show() {
         batch = SpriteBatch()
@@ -46,35 +48,36 @@ class MathematicGameScreen(private val game:com.badlogic.gdx.Game) : Screen {
     }
 
     private fun newQuestion() {
-        currentQuestion = QuestionGenerator.generate(level)
+        currentQuestion = QuestionGenerator.generate(level, operation)
         enemies.clear()
 
-        // Take 4 answers: correct + 3 random wrong ones
-        val options = currentQuestion.answers.shuffled().take(4)
+        val options = currentQuestion.answers.shuffled()
 
-        // Align vertically in the center of the screen
         val startY = Gdx.graphics.height / 5f
         val gap = Gdx.graphics.height / 6f
 
         for ((index, ans) in options.withIndex()) {
-            val enemy = Enemy(ans, MathUtils.random(0, 2), 128f)
+            val enemy = Enemy(answer = ans.toString(), textureIndex = MathUtils.random(0, 2), size = 128f)
             val yPos = startY + index * gap
             enemy.init(Gdx.graphics.width.toFloat(), yPos)
             enemies.add(enemy)
         }
     }
 
+
     private fun spawnEnemy() {
-        val screenHeight = Gdx.graphics.height
-        // Pick a random answer from the question list
         val ans = currentQuestion.answers.random()
-        val enemy = Enemy(ans, MathUtils.random(0, 2), 128f)
-        val yPos = screenHeight / 5f * MathUtils.random(1, 4) - 64f
+        val enemy = Enemy(answer = ans.toString(), textureIndex = MathUtils.random(0, 2), size = 128f)
+        val yPos = Gdx.graphics.height / 5f * MathUtils.random(1, 4) - 64f
         enemy.init(Gdx.graphics.width.toFloat(), yPos)
         enemies.add(enemy)
     }
 
+
     override fun render(delta: Float) {
+        // Increase player speed based on level
+
+        player.speed = playerBaseSpeed + (level-1) * speedIncrementPerLevel
         // Scroll background
         backgroundX1 -= backgroundSpeed * delta
         backgroundX2 -= backgroundSpeed * delta
@@ -97,12 +100,12 @@ class MathematicGameScreen(private val game:com.badlogic.gdx.Game) : Screen {
 
             // Collision
             if (enemy.rect.overlaps(player.rect)) {
-                if (enemy.answer == currentQuestion.correctAnswer) {
+                if (enemy.answer.toInt() == currentQuestion.correctAnswer) {
                     score += 10
                     questionsAnsweredCorrectly++
                     if (questionsAnsweredCorrectly >= 10 && level < 10) {
                         level++
-                        questionsAnsweredCorrectly = 0 //
+                        questionsAnsweredCorrectly = 0
                     }
                 } else {
                     lives--
