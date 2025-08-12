@@ -1,26 +1,26 @@
 package com.abraham.survivorbirdgame.model
-
-import com.badlogic.gdx.graphics.Texture
+import com.badlogic.gdx.math.MathUtils
 
 class MathEnemy(
-    texture: Texture,
-    x: Float,
-    y: Float,
-    width: Float,
-    height: Float,
-    val question: String,
-    val answer: Int
-) : Enemy(texture, x, y, width, height) {
+    question: String,
+    correctAnswer: Int,
+    textureIndex: Int,
+    size: Float
+) : Enemy(correctAnswer.toString(), textureIndex, size) {
+
+    val questionText: String = question
+    val correctAnswerValue: Int = correctAnswer
     val options: List<Int>
 
     init {
-        // Generate 2 wrong answers
+        // Generate 2 wrong answers near the correct one
         val wrongAnswers = mutableSetOf<Int>()
         while (wrongAnswers.size < 2) {
-            val wrong = (answer - 10..answer + 10).random()
-            if (wrong != answer) wrongAnswers.add(wrong)
+            val wrong = MathUtils.random(correctAnswer - 10, correctAnswer + 10)
+            if (wrong != correctAnswer) wrongAnswers.add(wrong)
         }
-        options = (wrongAnswers + answer).shuffled()
+        options = (wrongAnswers + correctAnswer).shuffled()
     }
 }
+
 
