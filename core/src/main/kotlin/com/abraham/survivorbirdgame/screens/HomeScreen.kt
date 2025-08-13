@@ -1,109 +1,160 @@
 package com.abraham.survivorbirdgame.screens
 
-import com.abraham.survivorbirdgame.model.Button
-import com.abraham.survivorbirdgame.model.Operation
+import com.abraham.survivorbirdgame.model.GameButton
+import com.abraham.survivorbirdgame.model.GameCategory
 import com.badlogic.gdx.Game
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.Screen
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.GL20
-import com.badlogic.gdx.graphics.g2d.SpriteBatch
+import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g2d.GlyphLayout
+import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.math.Rectangle
 import com.badlogic.gdx.math.Vector2
 
-class HomeScreen(private val game:Game):Screen {
+class HomeScreen(private val game: Game): Screen {
 
     private lateinit var batch: SpriteBatch
-    private lateinit var font:BitmapFont
+    private lateinit var font: BitmapFont
     private lateinit var shapeRenderer: ShapeRenderer
-    private val buttons = mutableListOf<Button>()
 
+    // List of carousel cards
+    private val cards = mutableListOf<GameCard>()
+
+    // Carousel scrolling
+    private var scrollX = 0f
+    private var startTouchX = 0f
+    private var isDragging = false
+
+    data class GameCard(
+        val title: String,
+        val description: String,
+        val image: Texture,
+        val screenFactory: () -> Screen
+    )
 
     override fun show() {
         batch = SpriteBatch()
         font = BitmapFont()
-        font.data.setScale(3f)
-        font.color = Color.SKY
+        font.data.setScale(2f)
         shapeRenderer = ShapeRenderer()
 
-        // Create buttons for each operation
-        val ops = listOf(
-            Pair("ADDITION", Operation.ADDITION),
-            Pair("SUBTRACTION", Operation.SUBTRACTION),
-            Pair("MULTIPLICATION", Operation.MULTIPLICATION),
-            Pair("DIVISION", Operation.DIVISION)
-        )
+        // Add your game cards here
+        cards.add(GameCard(
+            "Math Master",
+            "Solve fun math challenges!",
+            Texture("images/math_game.png"),
+            { MathCategoryScreen(game) }
+        ))
 
-        val buttonWidth = 350f
-        val buttonHeight = 150f
-        val gap = 50f
-        val startY = Gdx.graphics.height/ 2f + ((ops.size - 1) * (buttonHeight + gap) / 2f)
+        cards.add(GameCard(
+            "Catch Kenny",
+            "Catch Kenny before he escapes!",
+            Texture("images/catch_kenny.jpeg"),
+            { CatchKennyScreen(game) }
+        ))
 
-        ops.forEachIndexed { index, (text, op) ->
-            val x = (Gdx.graphics.width - buttonWidth) / 2f
-            val y = startY - index * (buttonHeight + gap)
-            buttons.add(Button(Rectangle(x, y, buttonWidth, buttonHeight), text, op))
-        }
+        // More games can be added here
     }
 
     override fun render(delta: Float) {
-        Gdx.gl.glClearColor(0f, 0f, 0f, 1f)
+        Gdx.gl.glClearColor(0.5f, 0f, 1f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
 
-        // Draw buttons
+        handleInput()
+
+        val cardWidth = 500f
+        val cardHeight = 400f
+        val cardGap = 50f
+        val centerX = Gdx.graphics.width / 2f
+        val centerY = Gdx.graphics.height / 2f
+
+        // Draw cards
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled)
-        buttons.forEach { button ->
-            shapeRenderer.color = if (button.bounds.contains(Vector2(Gdx.input.x.toFloat(), Gdx.graphics.height - Gdx.input.y.toFloat())))
-                com.badlogic.gdx.graphics.Color.DARK_GRAY else com.badlogic.gdx.graphics.Color.LIGHT_GRAY
-            shapeRenderer.rect(button.bounds.x, button.bounds.y, button.bounds.width, button.bounds.height)
+        cards.forEachIndexed { index, card ->
+            val x = centerX - cardWidth / 2 + (index * (cardWidth + cardGap)) - scrollX
+            val y = centerY - cardHeight / 2
+
+            // Only draw cards visible on screen for performance
+            if (x + cardWidth > 0 && x < Gdx.graphics.width) {
+                shapeRenderer.color = Color.WHITE
+                shapeRenderer.rect(x, y, cardWidth, cardHeight)
+            }
         }
         shapeRenderer.end()
 
+        // Draw card images and text
         batch.begin()
-        buttons.forEach { button ->
-            val layout = com.badlogic.gdx.graphics.g2d.GlyphLayout(font, button.text)
-            val textX = button.bounds.x + (button.bounds.width - layout.width) / 2f
-            val textY = button.bounds.y + (button.bounds.height + layout.height) / 2f
-            font.draw(batch, layout, textX, textY)
+        cards.forEachIndexed { index, card ->
+            val x = centerX - cardWidth / 2 + (index * (cardWidth + cardGap)) - scrollX
+            val y = centerY - cardHeight / 2
+
+            if (x + cardWidth > 0 && x < Gdx.graphics.width) {
+                // Draw game image
+                batch.draw(card.image, x + 20f, y + cardHeight / 3f, cardWidth - 40f, cardHeight / 2f)
+
+                // Draw title
+                val titleLayout = GlyphLayout(font, card.title)
+                font.color = Color.BLACK
+                font.draw(batch, titleLayout, x + (cardWidth - titleLayout.width) / 2f, y + cardHeight - 40f)
+
+                // Draw description
+                val descLayout = GlyphLayout(font, card.description)
+                font.draw(batch, descLayout, x + (cardWidth - descLayout.width) / 2f, y + 40f)
+            }
         }
         batch.end()
+    }
 
-        // Handle input - on touch down, check if inside button bounds
+    private fun handleInput() {
+        // Drag to scroll carousel
+        if (Gdx.input.isTouched) {
+            val touchX = Gdx.input.x.toFloat()
+            if (!isDragging) {
+                startTouchX = touchX
+                isDragging = true
+            } else {
+                val delta = startTouchX - touchX
+                scrollX += delta
+                startTouchX = touchX
+            }
+        } else {
+            isDragging = false
+        }
+
+        // Tap to select a card
         if (Gdx.input.justTouched()) {
             val touchX = Gdx.input.x.toFloat()
             val touchY = Gdx.graphics.height - Gdx.input.y.toFloat()
-            buttons.forEach { button ->
-                if (button.bounds.contains(touchX, touchY)) {
-                    // Start game with selected operation
-                    // Replace YourGameScreen with your actual screen class that accepts operation
-                    game.screen = MathematicGameScreen(game, button.operation)
+
+            val cardWidth = 500f
+            val cardHeight = 400f
+            val cardGap = 50f
+            val centerX = Gdx.graphics.width / 2f
+            val centerY = Gdx.graphics.height / 2f
+
+            cards.forEachIndexed { index, card ->
+                val x = centerX - cardWidth / 2 + (index * (cardWidth + cardGap)) - scrollX
+                val y = centerY - cardHeight / 2
+                val rect = Rectangle(x, y, cardWidth, cardHeight)
+                if (rect.contains(touchX, touchY)) {
+                    game.screen = card.screenFactory()
                 }
             }
         }
     }
 
-    override fun resize(width: Int, height: Int) {
-
-    }
-
-    override fun pause() {
-
-    }
-
-    override fun resume() {
-
-    }
-
-    override fun hide() {
-
-    }
-
+    override fun resize(width: Int, height: Int) {}
+    override fun pause() {}
+    override fun resume() {}
+    override fun hide() {}
     override fun dispose() {
         batch.dispose()
         font.dispose()
         shapeRenderer.dispose()
+        cards.forEach { it.image.dispose() }
     }
 }
