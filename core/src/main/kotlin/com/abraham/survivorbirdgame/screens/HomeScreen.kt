@@ -13,30 +13,34 @@ import com.badlogic.gdx.graphics.g2d.GlyphLayout
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.math.Rectangle
+import com.badlogic.gdx.utils.Align
 
 class HomeScreen(private val game: Game): Screen {
 
     private lateinit var batch: SpriteBatch
-    private lateinit var font: BitmapFont
     private lateinit var shapeRenderer: ShapeRenderer
+
     private lateinit var titleFont:BitmapFont
+    private lateinit var taglineFont:BitmapFont
+    private lateinit var descFont:BitmapFont
+
     private lateinit var background:Texture
     private lateinit var cardBackground:Texture
     private lateinit var leftArrow:Texture
     private lateinit var rightArrow:Texture
 
-    // List of carousel cards
     private val cards = mutableListOf<GameCard>()
 
-    // Carousel scrolling
     private var scrollX = 0f
     private var startTouchX = 0f
     private var isDragging = false
 
-    private val cardWidth = 500f
-    private val cardHeight = 400f
-    private val cardGap = 50f
+    private val cardWidth = 650f
+    private val cardHeight = 600f
+    private val cardGap = 70f
     private var maxScroll = 0f
+    private val leftPadding = 200f // Consistent left padding
+    private val arrowVerticalOffset = 100f // CHANGE: Added vertical offset to avoid status bar/camera notch
 
     data class GameCard(
         val title: String,
@@ -47,67 +51,82 @@ class HomeScreen(private val game: Game): Screen {
 
     override fun show() {
         batch = SpriteBatch()
-        font = BitmapFont()
-        font.data.setScale(2f)
-        titleFont = BitmapFont()
-        titleFont.data.setScale(3f)
+        titleFont = BitmapFont().apply {
+            data.setScale(7f)
+            color = Color.valueOf("#000000")
+        }
+        taglineFont = BitmapFont().apply {
+            data.setScale(4f)
+            color = Color.valueOf("#FF731D")
+        }
+        descFont = BitmapFont().apply {
+            data.setScale(2.5f)
+            color = Color.valueOf("#E0E0E0")
+        }
 
         shapeRenderer = ShapeRenderer()
 
-        background = Texture("images/home_bg.png")
-        cardBackground = Texture("images/card_bg.png")
+        background = Texture("images/home_bg7.jpg")
         leftArrow = Texture("images/arrow_left.png")
         rightArrow = Texture("images/arrow_right.png")
 
         cards.add(GameCard("Math Master", "Solve fun math challenges!", Texture("images/math_game.png")) { MathCategoryScreen(game) })
         cards.add(GameCard("Catch Kenny", "Catch Kenny before he escapes!", Texture("images/catch_kenny.jpeg")) { CatchKennyScreen(game) })
         cards.add(GameCard("Bird Escape", "Dodge and survive!", Texture("images/bird_escape.png")) { BirdEscapeScreen(game) })
-        cards.add(GameCard("Survivor Mode", "Endless flying challenge!", Texture("images/survivor_mode.png")) { SurvivorModeScreen(game) })
         cards.add(GameCard("Memory Match", "Test your memory!", Texture("images/memory_match.png")) { MemoryMatchScreen(game) })
         cards.add(GameCard("Puzzle Quest", "Solve tricky puzzles!", Texture("images/puzzle_quest.jpg")) { PuzzleQuestScreen(game) })
 
-        maxScroll = ((cards.size * (cardWidth + cardGap)) - cardGap) - Gdx.graphics.width
+        maxScroll = ((cards.size * (cardWidth + cardGap)) - cardGap) - (Gdx.graphics.width - leftPadding)
         if (maxScroll < 0) maxScroll = 0f
     }
 
     override fun render(delta: Float) {
-        Gdx.gl.glClearColor(0.5f, 0f, 1f, 1f);
+        Gdx.gl.glClearColor(0.5f, 0f, 1f, 1f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
 
         handleInput()
 
-        val cardWidth = 500f
-        val cardHeight = 400f
-        val cardGap = 50f
+        val renderCardWidth = 600f
+        val renderCardHeight = 500f
+        val renderCardGap = 80f
         val centerX = Gdx.graphics.width / 2f
         val centerY = Gdx.graphics.height / 2f
 
         batch.begin()
         batch.draw(background, 0f, 0f, Gdx.graphics.width.toFloat(), Gdx.graphics.height.toFloat())
 
-        // Draw cards
-        cards.forEachIndexed { index, card ->
-            val x = index * (cardWidth + cardGap) - scrollX // CHANGE: left-aligned carousel
-            val y = centerY - cardHeight / 2
+        val paddingBetweenTitleAndTagline = 80f
+        val paddingBetweenTaglineAndDesc = 80f
+        val titleLayout = GlyphLayout(titleFont, "BrainQuest Adventures for Kids")
+        val taglineLayout = GlyphLayout(taglineFont, "Fun challenges. Smart thinking. Big smiles.")
+        var currentY = Gdx.graphics.height - 80f
+        titleFont.draw(batch, titleLayout, centerX - titleLayout.width / 2, currentY)
+        currentY -= titleLayout.height + paddingBetweenTitleAndTagline
+        taglineFont.draw(batch, taglineLayout, centerX - taglineLayout.width / 2, currentY)
+        currentY -= taglineLayout.height + paddingBetweenTaglineAndDesc
 
-            if (x + cardWidth > 0 && x < Gdx.graphics.width) {
-                batch.draw(card.image, x, y, cardWidth, cardHeight)
+        // Draw cards with consistent left padding
+        cards.forEachIndexed { index, card ->
+            val x = leftPadding + index * (renderCardWidth + renderCardGap) - scrollX
+            val y = centerY - renderCardHeight / 2
+
+            if (x + renderCardWidth > 0 && x < Gdx.graphics.width) {
+                batch.draw(card.image, x, y, renderCardWidth, renderCardHeight)
             }
         }
-        // Navigation arrows - ADDED
-        val centerYArrow = Gdx.graphics.height / 2f - 50f
-        batch.draw(leftArrow, 50f, centerY - 50f, 100f, 100f)
-        batch.draw(rightArrow, Gdx.graphics.width - 150f, centerY - 50f, 100f, 100f)
+        // Navigation arrows with adjusted positions to avoid camera/status bar
+        batch.draw(leftArrow, 100f, centerY - 50f + arrowVerticalOffset, 100f, 100f) // CHANGE: Moved left arrow to x=100f and added vertical offset
+        batch.draw(rightArrow, Gdx.graphics.width - 150f, centerY - 50f + arrowVerticalOffset, 100f, 100f) // CHANGE: Added vertical offset to right arrow
 
         batch.end()
     }
 
     private fun handleInput() {
         // Drag to scroll carousel
-        val cardWidth = 500f
-        val cardGap = 50f
-        val maxScroll = (cards.size * (cardWidth + cardGap)) - cardWidth // ADDED
-        scrollX = scrollX.coerceIn(0f, maxScroll) // ADDED
+        val inputCardWidth = 600f
+        val inputCardGap = 80f
+        val maxScroll = (cards.size * (inputCardWidth + inputCardGap)) - inputCardWidth
+        scrollX = scrollX.coerceIn(0f, maxScroll)
 
         if (Gdx.input.isTouched) {
             val touchX = Gdx.input.x.toFloat()
@@ -129,33 +148,23 @@ class HomeScreen(private val game: Game): Screen {
             val touchX = Gdx.input.x.toFloat()
             val touchY = Gdx.graphics.height - Gdx.input.y.toFloat()
 
-            // Left arrow scroll
-            if (Rectangle(50f, Gdx.graphics.height / 2f - 50f, 100f, 100f).contains(
-                    touchX,
-                    touchY
-                )
-            ) {
-                scrollX -= cardWidth + cardGap // CHANGE: scroll left one card
+            // Left arrow with adjusted position
+            if (Rectangle(100f, Gdx.graphics.height / 2f - 50f + arrowVerticalOffset, 100f, 100f).contains(touchX, touchY)) { // CHANGE: Updated left arrow rectangle to match new position
+                scrollX -= inputCardWidth + inputCardGap
+                if (scrollX < 0) scrollX = 0f
+            }
+            // Right arrow with adjusted position
+            if (Rectangle(Gdx.graphics.width - 150f, Gdx.graphics.height / 2f - 50f + arrowVerticalOffset, 100f, 100f).contains(touchX, touchY)) { // CHANGE: Updated right arrow rectangle
+                scrollX += inputCardWidth + inputCardGap
             }
 
-            // Right arrow scroll
-            if (Rectangle(
-                    Gdx.graphics.width - 150f,
-                    Gdx.graphics.height / 2f - 50f,
-                    100f,
-                    100f
-                ).contains(touchX, touchY)
-            ) {
-                scrollX += cardWidth + cardGap // CHANGE: scroll right one card
-            }
+            scrollX = scrollX.coerceIn(0f, maxScroll)
 
-            scrollX = scrollX.coerceIn(0f, maxScroll) // CHANGE: clamp scrollX
-
-            // CHANGE: tap on card to select
+            // Tap on card to select
             cards.forEachIndexed { index, card ->
-                val x = index * (cardWidth + cardGap) - scrollX
+                val x = leftPadding + index * (inputCardWidth + inputCardGap) - scrollX
                 val y = Gdx.graphics.height / 2f - cardHeight / 2
-                if (Rectangle(x, y, cardWidth, cardHeight).contains(touchX, touchY)) {
+                if (Rectangle(x, y, inputCardWidth, cardHeight).contains(touchX, touchY)) {
                     game.screen = card.screenFactory()
                 }
             }
@@ -168,7 +177,9 @@ class HomeScreen(private val game: Game): Screen {
     override fun hide() {}
     override fun dispose() {
         batch.dispose()
-        font.dispose()
+        titleFont.dispose()
+        taglineFont.dispose()
+        descFont.dispose()
         shapeRenderer.dispose()
         background.dispose()
         cardBackground.dispose()

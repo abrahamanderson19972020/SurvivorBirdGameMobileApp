@@ -7,6 +7,7 @@ import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.BitmapFont
+import com.badlogic.gdx.graphics.g2d.GlyphLayout
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.math.MathUtils
@@ -17,6 +18,7 @@ import com.badlogic.gdx.utils.TimeUtils
 class CatchKennyScreen(private val game: Game):Screen {
     private lateinit var batch: SpriteBatch
     private lateinit var font: BitmapFont
+    private lateinit var titleFont: BitmapFont
     private lateinit var kennyTexture:Texture
     private lateinit var shapeRenderer: ShapeRenderer
     private var kennyRect = Rectangle()
@@ -31,11 +33,18 @@ class CatchKennyScreen(private val game: Game):Screen {
     private var kennyScale = 1f
     private var kennyTouchedTime = 0L
     private val kennyTouchDuration = 200L
+    private val titlePaddingTop = 40f
+
+
 
     override fun show() {
         batch = SpriteBatch()
         font = BitmapFont()
-        font.data.setScale(2f)
+        font.data.setScale(3f)
+        titleFont = BitmapFont().apply {
+            data.setScale(4f)
+            color = Color.valueOf("#EE4540")
+        }
         kennyTexture = Texture("images/catch_kenny.jpeg")
         shapeRenderer = ShapeRenderer()
         kennyRect.setSize(250f, 250f)
@@ -109,6 +118,13 @@ class CatchKennyScreen(private val game: Game):Screen {
         font.draw(batch, "SCORE: $score", 150f, Gdx.graphics.height - 50f)
         font.draw(batch, "LEVEL: $level", 150f, Gdx.graphics.height - 100f)
         font.draw(batch, "TIMER: ${timeLeft.toInt()}", Gdx.graphics.width - 380f, Gdx.graphics.height - 50f)
+        val titleLayout = GlyphLayout(titleFont, "CATCH KENNY")
+        titleFont.draw(
+            batch,
+            titleLayout,
+            (Gdx.graphics.width - titleLayout.width) / 2f,
+            Gdx.graphics.height - titlePaddingTop
+        )
 
         batch.end()  // <--- end after all drawing
 
@@ -167,6 +183,7 @@ class CatchKennyScreen(private val game: Game):Screen {
     override fun dispose() {
         batch.dispose()
         font.dispose()
+        titleFont.dispose()
         kennyTexture.dispose()
     }
 }
