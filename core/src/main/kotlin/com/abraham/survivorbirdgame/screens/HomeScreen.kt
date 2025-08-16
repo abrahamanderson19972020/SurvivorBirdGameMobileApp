@@ -37,7 +37,7 @@ class HomeScreen(private val game: Game): Screen {
 
     private val cardWidth = 650f
     private val cardHeight = 600f
-    private val cardGap = 70f
+    private val cardGap = 50f
     private var maxScroll = 0f
     private val leftPadding = 200f // Consistent left padding
     private val arrowVerticalOffset = 100f // CHANGE: Added vertical offset to avoid status bar/camera notch
@@ -53,11 +53,11 @@ class HomeScreen(private val game: Game): Screen {
         batch = SpriteBatch()
         titleFont = BitmapFont().apply {
             data.setScale(7f)
-            color = Color.valueOf("#000000")
+            color = Color.valueOf("#E4004B")
         }
         taglineFont = BitmapFont().apply {
             data.setScale(4f)
-            color = Color.valueOf("#FF731D")
+            color = Color.valueOf("#0F0E0E")
         }
         descFont = BitmapFont().apply {
             data.setScale(2.5f)
@@ -66,9 +66,9 @@ class HomeScreen(private val game: Game): Screen {
 
         shapeRenderer = ShapeRenderer()
 
-        background = Texture("images/home_bg7.jpg")
-        leftArrow = Texture("images/arrow_left.png")
-        rightArrow = Texture("images/arrow_right.png")
+        background = Texture("images/bg2.jpg")
+        leftArrow = Texture("images/left_arrow.jpg")
+        rightArrow = Texture("images/right_arrow.jpg")
 
         cards.add(GameCard("Math Master", "Solve fun math challenges!", Texture("images/math_game.png")) { MathCategoryScreen(game) })
         cards.add(GameCard("Catch Kenny", "Catch Kenny before he escapes!", Texture("images/catch_kenny.jpeg")) { CatchKennyScreen(game) })
@@ -95,16 +95,15 @@ class HomeScreen(private val game: Game): Screen {
         batch.begin()
         batch.draw(background, 0f, 0f, Gdx.graphics.width.toFloat(), Gdx.graphics.height.toFloat())
 
-        val paddingBetweenTitleAndTagline = 80f
-        val paddingBetweenTaglineAndDesc = 80f
+        val paddingBetweenTaglineAndDesc = 40f
         val titleLayout = GlyphLayout(titleFont, "BrainQuest Adventures for Kids")
         val taglineLayout = GlyphLayout(taglineFont, "Fun challenges. Smart thinking. Big smiles.")
         var currentY = Gdx.graphics.height - 80f
         titleFont.draw(batch, titleLayout, centerX - titleLayout.width / 2, currentY)
-        currentY -= titleLayout.height + paddingBetweenTitleAndTagline
-        taglineFont.draw(batch, taglineLayout, centerX - taglineLayout.width / 2, currentY)
-        currentY -= taglineLayout.height + paddingBetweenTaglineAndDesc
+        currentY -= taglineLayout.height - paddingBetweenTaglineAndDesc
 
+// Position cards below the tagline
+        val cardY = currentY - renderCardHeight - 20f
         // Draw cards with consistent left padding
         cards.forEachIndexed { index, card ->
             val x = leftPadding + index * (renderCardWidth + renderCardGap) - scrollX
@@ -114,9 +113,13 @@ class HomeScreen(private val game: Game): Screen {
                 batch.draw(card.image, x, y, renderCardWidth, renderCardHeight)
             }
         }
+        // After drawing cards
+        currentY = centerY - renderCardHeight / 2 - 100f  // Adjust Y to below cards
+        taglineFont.draw(batch, taglineLayout, centerX - taglineLayout.width / 2, currentY)
+
         // Navigation arrows with adjusted positions to avoid camera/status bar
-        batch.draw(leftArrow, 100f, centerY - 50f + arrowVerticalOffset, 100f, 100f) // CHANGE: Moved left arrow to x=100f and added vertical offset
-        batch.draw(rightArrow, Gdx.graphics.width - 150f, centerY - 50f + arrowVerticalOffset, 100f, 100f) // CHANGE: Added vertical offset to right arrow
+        batch.draw(leftArrow, 100f, centerY - 50f , 120f, 120f) // CHANGE: Moved left arrow to x=100f and added vertical offset
+        batch.draw(rightArrow, Gdx.graphics.width - 150f, centerY - 50f, 120f, 120f) // CHANGE: Added vertical offset to right arrow
 
         batch.end()
     }

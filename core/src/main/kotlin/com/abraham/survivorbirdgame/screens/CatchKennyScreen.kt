@@ -42,8 +42,8 @@ class CatchKennyScreen(private val game: Game):Screen {
         font = BitmapFont()
         font.data.setScale(3f)
         titleFont = BitmapFont().apply {
-            data.setScale(4f)
-            color = Color.valueOf("#EE4540")
+            data.setScale(5f)
+            color = Color.valueOf("#252A34")
         }
         kennyTexture = Texture("images/catch_kenny.jpeg")
         shapeRenderer = ShapeRenderer()
@@ -70,9 +70,9 @@ class CatchKennyScreen(private val game: Game):Screen {
         handleInput()
 
         // Draw boundary area
-        Gdx.gl.glLineWidth(3f)
+        Gdx.gl.glLineWidth(4f)
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line)
-        shapeRenderer.color = Color.BLACK // black border
+        shapeRenderer.color = Color.valueOf("#FF2E63")
 
         shapeRenderer.rect(
             borderInset, // left padding
@@ -114,7 +114,7 @@ class CatchKennyScreen(private val game: Game):Screen {
         )
 
 // Draw UI text
-        font.color = Color.BLACK
+        font.color = Color.valueOf("#252A34")
         font.draw(batch, "SCORE: $score", 150f, Gdx.graphics.height - 50f)
         font.draw(batch, "LEVEL: $level", 150f, Gdx.graphics.height - 100f)
         font.draw(batch, "TIMER: ${timeLeft.toInt()}", Gdx.graphics.width - 380f, Gdx.graphics.height - 50f)
